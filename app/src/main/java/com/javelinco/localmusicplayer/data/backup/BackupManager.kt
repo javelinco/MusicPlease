@@ -24,7 +24,11 @@ class BackupManager(
     private val restore: suspend (BackupBundle) -> Unit = {},
 ) {
     suspend fun listBackups(): List<String> = storage.listNames()
-        .filter { it.startsWith("LocalMusicPlayer-") && it.endsWith(".zip") }
+        .filter {
+            it.startsWith("LocalMusicPlayer-") &&
+                it.endsWith(".zip") &&
+                !it.endsWith(".tmp.zip")
+        }
         .sortedDescending()
 
     suspend fun createAutomaticIfDue(): Boolean {
@@ -51,7 +55,10 @@ class BackupManager(
     }
 
     private suspend fun writeValidated(finalName: String, bundle: BackupBundle) {
-        val temporaryName = "$finalName.tmp"
+        // Some document providers append .zip to application/zip names unless the requested
+        // display name already has that suffix. Keep the temporary name ZIP-suffixed so the
+        // provider stores exactly the name that validation and promotion subsequently use.
+        val temporaryName = "${finalName.removeSuffix(".zip")}.tmp.zip"
         val bytes = BackupCodec.encode(bundle)
         try {
             storage.write(temporaryName, bytes)

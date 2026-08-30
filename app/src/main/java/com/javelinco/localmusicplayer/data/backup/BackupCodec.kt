@@ -105,9 +105,12 @@ object BackupCodec {
 object BackupRetention {
     fun filesToDelete(names: List<String>, keepAutomatic: Int = 7): List<String> =
         names.asSequence()
-            .filter { it.startsWith("LocalMusicPlayer-auto-") && it.endsWith(".zip") }
+            .filter {
+                it.startsWith("LocalMusicPlayer-auto-") &&
+                    it.endsWith(".zip") &&
+                    !it.endsWith(".tmp.zip")
+            }
             .sortedDescending()
             .drop(keepAutomatic.coerceAtLeast(0))
             .toList()
 }
-

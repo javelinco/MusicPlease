@@ -21,7 +21,7 @@ class BackupManagerTest {
 
         assertEquals(7, storage.files.keys.count { "-auto-" in it })
         assertTrue("LocalMusicPlayer-manual-kept.zip" in storage.files)
-        assertTrue(storage.files.keys.none { it.endsWith(".tmp") })
+        assertTrue(storage.files.keys.none { it.endsWith(".tmp.zip") })
     }
 
     @Test
@@ -61,6 +61,37 @@ class BackupManagerTest {
         assertTrue(name in storage.files)
     }
 
+    @Test
+    fun manualBackupUsesZipSuffixedTemporaryNameForDocumentProviders() = runTest {
+        val storage = ZipExtensionAddingBackupStorage()
+        val instant = Instant.parse("2026-08-30T19:20:37Z")
+        val manager = BackupManager(
+            storage = storage,
+            snapshot = { bundle(instant.toEpochMilli()) },
+            nowEpochMs = { instant.toEpochMilli() },
+        )
+
+        val name = manager.createManual()
+
+        assertEquals("LocalMusicPlayer-manual-20260830-192037.zip", name)
+        assertEquals(listOf(name), storage.files.keys.toList())
+    }
+
+    @Test
+    fun temporaryZipFilesAreNotShownAsRestorableBackups() = runTest {
+        val storage = FakeBackupStorage().apply {
+            files["LocalMusicPlayer-manual-complete.zip"] = validBytes(1)
+            files["LocalMusicPlayer-manual-interrupted.tmp.zip"] = validBytes(2)
+            files["LocalMusicPlayer-manual-legacy.zip.tmp.zip"] = validBytes(3)
+        }
+        val manager = BackupManager(storage, { bundle(4) })
+
+        assertEquals(
+            listOf("LocalMusicPlayer-manual-complete.zip"),
+            manager.listBackups(),
+        )
+    }
+
     private fun bundle(now: Long) = BackupBundle(
         BackupManifest(createdAtEpochMs = now, appVersion = "test"),
         BackupUserData(settings = mapOf("theme" to "dark")),
@@ -75,6 +106,23 @@ private class FakeBackupStorage : BackupStorage {
     override suspend fun listNames(): List<String> = files.keys.toList()
     override suspend fun read(name: String): ByteArray = files.getValue(name)
     override suspend fun write(name: String, bytes: ByteArray) { files[name] = bytes }
+    override suspend fun delete(name: String) { files.remove(name) }
+    override suspend fun promote(temporaryName: String, finalName: String) {
+        files[finalName] = files.remove(temporaryName) ?: error("missing temporary backup")
+    }
+}
+
+/** Matches providers that append .zip when an application/zip display name lacks that suffix. */
+private class ZipExtensionAddingBackupStorage : BackupStorage {
+    val files = linkedMapOf<String, ByteArray>()
+
+    override suspend fun listNames(): List<String> = files.keys.toList()
+    override suspend fun read(name: String): ByteArray = files[name]
+        ?: throw InvalidBackupException("Backup not found: $name")
+    override suspend fun write(name: String, bytes: ByteArray) {
+        val providerName = if (name.endsWith(".zip")) name else "$name.zip"
+        files[providerName] = bytes
+    }
     override suspend fun delete(name: String) { files.remove(name) }
     override suspend fun promote(temporaryName: String, finalName: String) {
         files[finalName] = files.remove(temporaryName) ?: error("missing temporary backup")
