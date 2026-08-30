@@ -40,7 +40,7 @@ class DerivedMediaCache(cacheDir: File, private val json: Json = Json) {
 
     private fun writeAtomically(target: File, bytes: ByteArray) {
         target.parentFile?.mkdirs()
-        val temporary = File(target.parentFile, "${target.name}.${Thread.currentThread().id}.tmp")
+        val temporary = File(target.parentFile, "${target.name}.${System.nanoTime()}.tmp")
         temporary.writeBytes(bytes)
         try {
             Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)

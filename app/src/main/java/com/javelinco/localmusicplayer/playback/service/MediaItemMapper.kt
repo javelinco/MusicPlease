@@ -6,9 +6,12 @@ import androidx.media3.common.MediaMetadata
 import com.javelinco.localmusicplayer.data.db.TrackEntity
 
 object MediaItemMapper {
-    fun toMediaItem(track: TrackEntity): MediaItem {
+    fun toMediaItem(track: TrackEntity, artworkUri: String? = null): MediaItem {
         val uri = Uri.parse(track.contentUri)
         require(uri.scheme in LOCAL_SCHEMES) { "Playback URI must be local: ${uri.scheme}" }
+        val localArtworkUri = artworkUri?.let(Uri::parse)?.also {
+            require(it.scheme in LOCAL_SCHEMES) { "Artwork URI must be local: ${it.scheme}" }
+        }
         return MediaItem.Builder()
             .setMediaId(track.trackId)
             .setUri(uri)
@@ -20,6 +23,7 @@ object MediaItemMapper {
                     .setAlbumArtist(track.albumArtist)
                     .setTrackNumber(track.trackNumber)
                     .setDiscNumber(track.discNumber)
+                    .setArtworkUri(localArtworkUri)
                     .build(),
             )
             .build()

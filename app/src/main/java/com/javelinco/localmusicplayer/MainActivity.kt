@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
     private val app: LocalMusicPlayerApp get() = application as LocalMusicPlayerApp
     private val libraryViewModel: LibraryViewModel by viewModels { LibraryViewModel.Factory(app.container) }
     private val playbackViewModel: PlaybackViewModel by viewModels {
-        PlaybackViewModel.Factory(application, app.container.recentPlayRepository)
+        PlaybackViewModel.Factory(application, app.container.recentPlayRepository, app.container.derivedMediaRepository)
     }
 
     private val selectionHandler by lazy {
@@ -101,6 +101,7 @@ class MainActivity : ComponentActivity() {
             val backups by libraryViewModel.backupNames.collectAsState()
             val status by libraryViewModel.status.collectAsState()
             val playback by playbackViewModel.state.collectAsState()
+            val trackMedia by libraryViewModel.trackMedia.collectAsState()
             val playPlaylist: (String) -> Unit = { playlistId ->
                 val tracksById = tracks.associateBy { it.trackId }
                 val ordered = playlistEntries
@@ -126,6 +127,7 @@ class MainActivity : ComponentActivity() {
                         searchOpen = searchOpen,
                         searchQuery = searchQuery,
                         searchResult = searchResult,
+                        trackMedia = trackMedia,
                     ),
                     libraryActions = LibraryActions(
                         onSelectView = libraryViewModel::selectLibraryView,
@@ -159,6 +161,7 @@ class MainActivity : ComponentActivity() {
                         onAddTracksToPlaylist = libraryViewModel::addTracksToPlaylist,
                         onRemovePlaylistEntry = libraryViewModel::removePlaylistEntry,
                         onMovePlaylistEntry = libraryViewModel::movePlaylistEntry,
+                        onRequestMedia = libraryViewModel::requestMedia,
                     ),
                     recentTracks = history.tracks,
                     recentPlaylists = history.playlists,
@@ -186,6 +189,8 @@ class MainActivity : ComponentActivity() {
                     onRestore = libraryViewModel::restoreBackup,
                     onTheme = libraryViewModel::setTheme,
                     onReducedMotion = libraryViewModel::setReducedMotion,
+                    trackMedia = trackMedia,
+                    onRequestMedia = libraryViewModel::requestMedia,
                 )
                 if (showDevicePermissionExplanation) DevicePermissionDialog()
             }

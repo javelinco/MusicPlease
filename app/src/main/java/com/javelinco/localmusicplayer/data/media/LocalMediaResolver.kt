@@ -22,8 +22,21 @@ class AndroidEmbeddedMediaReader(
     private val metadataExtractor: Mp3MetadataExtractor,
 ) : EmbeddedMediaReader {
     override suspend fun read(entry: SourceEntry): EmbeddedTrackMedia = withContext(Dispatchers.IO) {
-        val prefix = contentResolver.openInputStream(Uri.parse(entry.contentUri))?.use {
-            it.readNBytes(MAX_ID3_BYTES + 1).takeIf { bytes -> bytes.size <= MAX_ID3_BYTES }
+        val prefix = contentResolver.openInputStream(Uri.parse(entry.contentUri))?.use { stream ->
+            val header = stream.readNBytes(10)
+            if (header.size != 10 || !header.copyOfRange(0, 3).contentEquals("ID3".encodeToByteArray())) {
+                null
+            } else {
+                val bodySize = ((header[6].toInt() and 0x7f) shl 21) or
+                    ((header[7].toInt() and 0x7f) shl 14) or
+                    ((header[8].toInt() and 0x7f) shl 7) or
+                    (header[9].toInt() and 0x7f)
+                if (bodySize > MAX_ID3_BODY_BYTES) null else {
+                    val footerSize = if (header[5].toInt() and 0x10 != 0) 10 else 0
+                    val remainder = stream.readNBytes(bodySize + footerSize)
+                    (header + remainder).takeIf { remainder.size == bodySize + footerSize }
+                }
+            }
         }
         EmbeddedTrackMedia(
             artwork = runCatching { metadataExtractor.extractArtwork(entry) }.getOrNull(),
@@ -31,7 +44,7 @@ class AndroidEmbeddedMediaReader(
         )
     }
 
-    private companion object { const val MAX_ID3_BYTES = 4 * 1024 * 1024 + 10 }
+    private companion object { const val MAX_ID3_BODY_BYTES = 4 * 1024 * 1024 }
 }
 
 data class ResolvedTrackMedia(

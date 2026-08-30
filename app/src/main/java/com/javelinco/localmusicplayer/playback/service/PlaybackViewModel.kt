@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.DerivedMediaRepository
 import com.javelinco.localmusicplayer.home.RecentPlayRepository
 import java.security.SecureRandom
 import kotlinx.coroutines.Job
@@ -15,6 +16,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import android.net.Uri
 import kotlinx.coroutines.launch
 
 data class PlaybackUiState(
@@ -49,6 +52,7 @@ internal fun queueInsertionIndex(
 class PlaybackViewModel(
     application: Application,
     private val recentPlays: RecentPlayRepository,
+    private val derivedMedia: DerivedMediaRepository,
 ) : AndroidViewModel(application) {
     private val connection = PlaybackController(application)
     private val mutableState = MutableStateFlow(PlaybackUiState())
@@ -57,6 +61,8 @@ class PlaybackViewModel(
     private var tracks: List<TrackEntity> = emptyList()
     private var progressJob: Job? = null
     private val historyTracker = PlaybackHistoryTracker()
+    private var enrichedArtworkPath: String? = null
+    private var requestedMediaId: String? = null
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = update(player)
@@ -76,6 +82,20 @@ class PlaybackViewModel(
             },
             application.mainExecutor,
         )
+        viewModelScope.launch {
+            derivedMedia.states.collectLatest { states ->
+                val player = controller ?: return@collectLatest
+                val id = player.currentMediaItem?.mediaId ?: return@collectLatest
+                val path = states[id]?.artworkPath ?: return@collectLatest
+                if (path == enrichedArtworkPath) return@collectLatest
+                val track = tracks.find { it.trackId == id } ?: return@collectLatest
+                val index = player.currentMediaItemIndex
+                if (index >= 0) {
+                    player.replaceMediaItem(index, MediaItemMapper.toMediaItem(track, Uri.fromFile(java.io.File(path)).toString()))
+                    enrichedArtworkPath = path
+                }
+            }
+        }
     }
 
     fun play(track: TrackEntity, view: List<TrackEntity>) {
@@ -219,6 +239,14 @@ class PlaybackViewModel(
                 record.playlistId?.let { recentPlays.recordPlaylist(it) }
             }
         }
+        val currentId = player.currentMediaItem?.mediaId
+        if (currentId != requestedMediaId) {
+            requestedMediaId = currentId
+            enrichedArtworkPath = null
+            tracks.find { it.trackId == currentId }?.let { track ->
+                viewModelScope.launch { derivedMedia.ensure(track) }
+            }
+        }
         if (player.isPlaying && progressJob?.isActive != true) {
             progressJob = viewModelScope.launch {
                 while (true) {
@@ -240,9 +268,10 @@ class PlaybackViewModel(
     class Factory(
         private val application: Application,
         private val recentPlays: RecentPlayRepository,
+        private val derivedMedia: DerivedMediaRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            PlaybackViewModel(application, recentPlays) as T
+            PlaybackViewModel(application, recentPlays, derivedMedia) as T
     }
 }

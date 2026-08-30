@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.javelinco.localmusicplayer.data.db.RecentPlaylistRow
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.ui.components.LocalArtwork
 import com.javelinco.localmusicplayer.ui.library.TrackActionCallbacks
 import com.javelinco.localmusicplayer.ui.library.TrackActionMenu
 
@@ -71,6 +72,7 @@ internal fun RecentTrackCard(
     actions: TrackActionCallbacks,
     onPlay: () -> Unit,
     onRemoveFromRecentlyPlayed: () -> Unit,
+    artworkPath: String? = null,
 ) {
     Card(
         onClick = onPlay,
@@ -84,7 +86,11 @@ internal fun RecentTrackCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RecentItemIcon(isPlaylist = false)
+            LocalArtwork(
+                path = artworkPath,
+                description = "Album art for ${track.title ?: track.fileName}",
+                size = 48.dp,
+            )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = track.title ?: track.fileName,

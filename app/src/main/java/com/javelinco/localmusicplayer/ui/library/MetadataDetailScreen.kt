@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.TrackMediaState
 
 @Composable
 internal fun MetadataDetailScreen(
@@ -33,6 +34,8 @@ internal fun MetadataDetailScreen(
     onPlayAll: () -> Unit,
     onAddAll: () -> Unit,
     trackActions: TrackActionCallbacks,
+    media: Map<String, TrackMediaState> = emptyMap(),
+    onRequestMedia: (TrackEntity) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -72,6 +75,6 @@ internal fun MetadataDetailScreen(
             Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null)
             Text("Add all to playlist", modifier = Modifier.padding(start = 8.dp))
         }
-        TrackList(tracks, onPlayTrack, actions = trackActions)
+        TrackList(tracks, onPlayTrack, actions = trackActions, media = media, onRequestMedia = onRequestMedia)
     }
 }

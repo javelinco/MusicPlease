@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.javelinco.localmusicplayer.playback.service.PlaybackUiState
+import com.javelinco.localmusicplayer.ui.components.LocalArtwork
 
 @Composable
 fun MiniPlayer(
@@ -30,6 +31,7 @@ fun MiniPlayer(
     onPrevious: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
+    artworkPath: String? = null,
 ) {
     if (!state.hasSession) return
     Surface(tonalElevation = 6.dp, modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
@@ -37,6 +39,12 @@ fun MiniPlayer(
             Modifier.padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            LocalArtwork(
+                path = artworkPath,
+                description = "Album art for ${state.title}",
+                size = 44.dp,
+                modifier = Modifier.padding(end = 10.dp),
+            )
             Column(Modifier.weight(1f)) {
                 Text(
                     state.title.ifBlank { "Unknown track" },

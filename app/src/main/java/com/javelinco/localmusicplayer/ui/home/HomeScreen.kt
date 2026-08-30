@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.javelinco.localmusicplayer.data.db.RecentPlaylistRow
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.TrackMediaState
 import com.javelinco.localmusicplayer.home.RecentPlaybackQueue
 import com.javelinco.localmusicplayer.home.recentPlaybackQueue
 import com.javelinco.localmusicplayer.ui.library.TrackActionCallbacks
@@ -25,6 +27,8 @@ fun HomeScreen(
     onPlayPlaylist: (String) -> Unit,
     onRemoveRecentTrack: (String) -> Unit,
     onRemoveRecentPlaylist: (String) -> Unit,
+    trackMedia: Map<String, TrackMediaState> = emptyMap(),
+    onRequestMedia: (TrackEntity) -> Unit = {},
 ) {
     fun playRecent(track: TrackEntity) {
         recentPlaybackQueue(track.trackId, recentTracks)?.let(onPlayRecentQueue)
@@ -38,11 +42,13 @@ fun HomeScreen(
             if (recentTracks.isNotEmpty()) {
                 item(key = "songs-header") { RecentSectionHeader("Songs", recentTracks.size) }
                 items(recentTracks, key = { "track:${it.trackId}" }) { track ->
+                    LaunchedEffect(track.trackId, track.modifiedAtEpochMs, track.sizeBytes) { onRequestMedia(track) }
                     RecentTrackCard(
                         track = track,
                         actions = recentTrackActions,
                         onPlay = { playRecent(track) },
                         onRemoveFromRecentlyPlayed = { onRemoveRecentTrack(track.trackId) },
+                        artworkPath = trackMedia[track.trackId]?.artworkPath,
                     )
                 }
             }

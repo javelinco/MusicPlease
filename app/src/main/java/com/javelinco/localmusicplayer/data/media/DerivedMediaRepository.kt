@@ -64,7 +64,7 @@ class DerivedMediaRepository(
                 digest("${track.normalizedAlbumArtist}\u0000${track.normalizedAlbumTitle}\u0000${digest(bytes)}")
             }
             withContext(ioDispatcher) {
-                if (artworkKey != null && transcoded != null) cache.writeArtwork(artworkKey, transcoded)
+                if (artworkKey != null) cache.writeArtwork(artworkKey, requireNotNull(transcoded))
                 cache.writeRecord(track.trackId, CachedTrackMedia(fingerprint, result.companionFingerprint, artworkKey, result.lyrics))
             }
             publish(track.trackId, TrackMediaState(false, artworkKey?.let { cache.artworkPath(it)?.absolutePath }, result.lyrics))

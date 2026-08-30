@@ -45,10 +45,12 @@ import com.javelinco.localmusicplayer.data.db.NamedGroupSummary
 import com.javelinco.localmusicplayer.data.db.PlaylistEntryEntity
 import com.javelinco.localmusicplayer.data.db.TrackEntity
 import com.javelinco.localmusicplayer.data.db.IgnoredTrackEntity
+import com.javelinco.localmusicplayer.data.media.TrackMediaState
 import com.javelinco.localmusicplayer.data.scan.ScanProgress
 import com.javelinco.localmusicplayer.data.source.MusicSource
 import com.javelinco.localmusicplayer.library.LibrarySearchResult
 import com.javelinco.localmusicplayer.playlists.PlaylistSummary
+import com.javelinco.localmusicplayer.ui.components.LocalArtwork
 
 data class LibraryScreenState(
     val selectedView: LibraryView = LibraryView.TRACKS,
@@ -66,6 +68,7 @@ data class LibraryScreenState(
     val searchQuery: String = "",
     val searchResult: LibrarySearchResult? = null,
     val requestedArtist: String? = null,
+    val trackMedia: Map<String, TrackMediaState> = emptyMap(),
 )
 
 @Suppress("LongParameterList")
@@ -94,6 +97,7 @@ data class LibraryActions(
     val onAddTracksToPlaylist: (String, List<String>) -> Unit = { _, _ -> },
     val onRemovePlaylistEntry: (String, String) -> Unit = { _, _ -> },
     val onMovePlaylistEntry: (String, Int, Int) -> Unit = { _, _, _ -> },
+    val onRequestMedia: (TrackEntity) -> Unit = {},
 )
 
 @Composable
@@ -227,12 +231,14 @@ fun LibraryScreen(state: LibraryScreenState, actions: LibraryActions) {
                 onPlayAll = { playAll(opened) },
                 onAddAll = { requestGroupAddition(opened) },
                 trackActions = trackActions,
+                media = state.trackMedia,
+                onRequestMedia = actions.onRequestMedia,
             )
             return@Column
         }
 
         when (val result = state.searchResult) {
-            is LibrarySearchResult.Tracks -> TrackList(result.items, actions.onPlayTrack, actions = trackActions)
+            is LibrarySearchResult.Tracks -> TrackList(result.items, actions.onPlayTrack, actions = trackActions, media = state.trackMedia, onRequestMedia = actions.onRequestMedia)
             is LibrarySearchResult.NamedGroups -> MetadataListScreen(
                 groups = result.items,
                 onOpen = { openedGroup = OpenedLibraryGroup.Named(state.selectedView, it) },
@@ -243,6 +249,9 @@ fun LibraryScreen(state: LibraryScreenState, actions: LibraryActions) {
                 albums = result.items,
                 onOpen = { openedGroup = OpenedLibraryGroup.Album(it) },
                 onPlayAll = { playAll(OpenedLibraryGroup.Album(it)) },
+                tracks = state.tracks,
+                media = state.trackMedia,
+                onRequestMedia = actions.onRequestMedia,
             )
             is LibrarySearchResult.Playlists -> PlaylistScreen(
                 result.items,
@@ -304,7 +313,7 @@ private fun LibraryBrowseContent(
     trackActions: TrackActionCallbacks,
 ) {
     when (state.selectedView) {
-        LibraryView.TRACKS -> TrackList(state.tracks, actions.onPlayTrack, actions = trackActions)
+        LibraryView.TRACKS -> TrackList(state.tracks, actions.onPlayTrack, actions = trackActions, media = state.trackMedia, onRequestMedia = actions.onRequestMedia)
         LibraryView.ARTISTS -> MetadataListScreen(
             groups = state.artists,
             onOpen = { onOpenGroup(OpenedLibraryGroup.Named(LibraryView.ARTISTS, it)) },
@@ -315,6 +324,9 @@ private fun LibraryBrowseContent(
             albums = state.albums,
             onOpen = { onOpenGroup(OpenedLibraryGroup.Album(it)) },
             onPlayAll = { onPlayGroup(OpenedLibraryGroup.Album(it)) },
+            tracks = state.tracks,
+            media = state.trackMedia,
+            onRequestMedia = actions.onRequestMedia,
         )
         LibraryView.GENRES -> MetadataListScreen(
             groups = state.genres,
@@ -344,6 +356,8 @@ fun TrackList(
     onPlay: (TrackEntity) -> Unit,
     onAddToPlaylist: ((TrackEntity) -> Unit)? = null,
     actions: TrackActionCallbacks? = null,
+    media: Map<String, TrackMediaState> = emptyMap(),
+    onRequestMedia: (TrackEntity) -> Unit = {},
 ) {
     if (tracks.isEmpty()) {
         Text("No scanned MP3s yet.", modifier = Modifier.padding(top = 18.dp))
@@ -354,6 +368,7 @@ fun TrackList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(tracks, key = TrackEntity::trackId) { track ->
+            LaunchedEffect(track.trackId, track.modifiedAtEpochMs, track.sizeBytes) { onRequestMedia(track) }
             Card(
                 onClick = { onPlay(track) },
                 modifier = Modifier
@@ -369,6 +384,12 @@ fun TrackList(
                     modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    LocalArtwork(
+                        path = media[track.trackId]?.artworkPath,
+                        description = "Album art for ${track.title ?: track.fileName}",
+                        size = 48.dp,
+                        modifier = Modifier.padding(end = 10.dp),
+                    )
                     Column(
                         modifier = Modifier.weight(1f).padding(vertical = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),

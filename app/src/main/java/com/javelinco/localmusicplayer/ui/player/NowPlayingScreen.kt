@@ -27,7 +27,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -36,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import com.javelinco.localmusicplayer.playback.service.PlaybackUiState
+import com.javelinco.localmusicplayer.data.media.TrackMediaState
+import com.javelinco.localmusicplayer.ui.components.LocalArtwork
 
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -49,24 +56,23 @@ fun NowPlayingScreen(
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
     onQueue: () -> Unit,
+    media: TrackMediaState = TrackMediaState(),
 ) {
+    var lyricsExpanded by remember(state.currentMediaId) { mutableStateOf(false) }
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.AutoMirrored.Rounded.QueueMusic,
-                    contentDescription = null,
-                    modifier = Modifier.size(96.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+        if (lyricsExpanded && media.lyrics != null) {
+            FullLyrics(media.lyrics, state.positionMs, reducedMotion, Modifier.fillMaxWidth().weight(1f))
+        } else {
+            LocalArtwork(
+                path = media.artworkPath,
+                description = "Album art for ${state.title}",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                size = 320.dp,
+                cornerRadius = 28.dp,
+            )
         }
         Spacer(Modifier.height(20.dp))
         Text(
@@ -76,6 +82,14 @@ fun NowPlayingScreen(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        media.lyrics?.let { lyrics ->
+            Spacer(Modifier.height(10.dp))
+            if (lyricsExpanded) {
+                TextButton(onClick = { lyricsExpanded = false }) { Text("Show album art") }
+            } else {
+                CompactLyrics(lyrics, state.positionMs) { lyricsExpanded = true }
+            }
+        }
         Text(
             state.artist.ifBlank { "Unknown artist" },
             color = MaterialTheme.colorScheme.onSurfaceVariant,

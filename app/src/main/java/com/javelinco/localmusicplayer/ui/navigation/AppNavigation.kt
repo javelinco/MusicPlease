@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.javelinco.localmusicplayer.data.db.RecentPlaylistRow
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.TrackMediaState
 import com.javelinco.localmusicplayer.data.settings.SettingsState
 import com.javelinco.localmusicplayer.data.settings.ThemePreference
 import com.javelinco.localmusicplayer.home.RecentPlaybackQueue
@@ -115,6 +116,8 @@ fun AppNavigation(
     onRestore: (String) -> Unit,
     onTheme: (ThemePreference) -> Unit,
     onReducedMotion: (Boolean) -> Unit,
+    trackMedia: Map<String, TrackMediaState> = emptyMap(),
+    onRequestMedia: (TrackEntity) -> Unit = {},
 ) {
     var navigation by rememberSaveable(
         stateSaver = listSaver(
@@ -170,6 +173,10 @@ fun AppNavigation(
         Destination.LIBRARY -> PrimaryDestination.LIBRARY
         else -> PrimaryDestination.MORE
     }
+    val currentMedia = playback.currentMediaId?.let(trackMedia::get) ?: TrackMediaState()
+    LaunchedEffect(playback.currentMediaId) {
+        playback.currentMediaId?.let { id -> libraryState.tracks.find { it.trackId == id } }?.let(onRequestMedia)
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -180,6 +187,7 @@ fun AppNavigation(
                     onPrevious = onPrevious,
                     onPlayPause = onPlayPause,
                     onNext = onNext,
+                    artworkPath = currentMedia.artworkPath,
                 )
                 PrimaryNavigationBar(primary) { selected ->
                     navigateTo(when (selected) {
@@ -209,6 +217,7 @@ fun AppNavigation(
                         onShuffle,
                         onRepeat,
                         { navigateTo(Destination.QUEUE) },
+                        currentMedia,
                     )
                 } else {
                     HomeScreen(
@@ -219,6 +228,8 @@ fun AppNavigation(
                         libraryActions.onPlayPlaylist,
                         onRemoveRecentTrack,
                         onRemoveRecentPlaylist,
+                        trackMedia,
+                        onRequestMedia,
                     )
                 }
                 Destination.LIBRARY -> LibraryScreen(
@@ -240,6 +251,7 @@ fun AppNavigation(
                     onShuffle,
                     onRepeat,
                     { navigateTo(Destination.QUEUE) },
+                    currentMedia,
                 )
                 Destination.QUEUE -> QueueScreen(
                     playback.queueTracks,

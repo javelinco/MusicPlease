@@ -28,6 +28,15 @@ class MediaItemMapperTest {
     }
 
     @Test
+    fun mapsOnlyLocalArtworkUris() {
+        val item = MediaItemMapper.toMediaItem(track("content://media/song"), "file:///data/user/0/app/cache/art.webp")
+        assertEquals("file", item.mediaMetadata.artworkUri?.scheme)
+        assertThrows(IllegalArgumentException::class.java) {
+            MediaItemMapper.toMediaItem(track("content://media/song"), "https://example.com/art.jpg")
+        }
+    }
+
+    @Test
     fun replayGainParsingUsesUnityForMissingOrInvalidTags() {
         assertEquals(1f, ReplayGain.parseLinearGain(null))
         assertEquals(1f, ReplayGain.parseLinearGain("loud"))
