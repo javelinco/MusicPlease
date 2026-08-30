@@ -59,7 +59,8 @@ class MoreMusicFoldersUiTest {
         compose.onAllNodesWithContentDescription("Library tools").assertCountEquals(0)
 
         compose.onNodeWithText("More").performClick()
-        compose.onNodeWithText("Music folders and scanning").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Music folders and scanning").assertIsDisplayed()
+        compose.onNodeWithText("Manage").assertIsDisplayed().performClick()
         compose.onNodeWithText("Music sources").assertIsDisplayed()
         compose.onNodeWithText("Add another folder").assertIsDisplayed()
     }

@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.NavigationBar
@@ -302,32 +300,6 @@ fun AppNavigation(
             listOfNotNull(source?.label, source?.identity).joinToString(" — ").ifBlank { "Unknown" },
             onDismiss = { pendingInformationTrack = null },
         )
-    }
-}
-
-@Composable
-private fun MoreScreen(
-    onMusicFolders: () -> Unit,
-    onBackup: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    Column {
-        ListItem(
-            headlineContent = { Text("Music folders and scanning") },
-            supportingContent = { Text("Add folders, rescan music, and manage ignored tracks") },
-            modifier = Modifier.clickable(onClick = onMusicFolders),
-        )
-        ListItem(
-            leadingContent = { Icon(Icons.Rounded.Backup, null) },
-            headlineContent = { Text("Backup and restore") },
-            modifier = Modifier.clickable(onClick = onBackup),
-        )
-        ListItem(
-            leadingContent = { Icon(Icons.Rounded.Palette, null) },
-            headlineContent = { Text("Appearance") },
-            modifier = Modifier.clickable(onClick = onSettings),
-        )
-        Text("Offline only · MP3 · no telemetry · no internet permission")
     }
 }
 
