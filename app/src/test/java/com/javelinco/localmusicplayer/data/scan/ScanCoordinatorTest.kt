@@ -124,6 +124,31 @@ class ScanCoordinatorTest {
         assertEquals(1L, coordinator.progress.value?.processed)
     }
 
+    @Test
+    fun scannedTrackPreservesSelectedFolderParentDocumentId() = runTest {
+        val catalog = RecordingCatalog()
+        val coordinator = DefaultScanCoordinator(
+            sourceProvider = { listOf(source) },
+            readerFactory = {
+                ListReader(
+                    listOf(
+                        entry(
+                            id = "one",
+                            name = "One.mp3",
+                            parentDocumentId = "music/album",
+                        ),
+                    ),
+                )
+            },
+            extractor = FakeExtractor(),
+            catalog = catalog,
+        )
+
+        coordinator.run(ScanExecutionMode.BACKGROUND)
+
+        assertEquals("music/album", catalog.tracks.single().parentDocumentId)
+    }
+
     private fun entries() = listOf(
         entry("one", "One.mp3"),
         entry("skip", "Notes.txt", "text/plain"),
@@ -131,14 +156,20 @@ class ScanCoordinatorTest {
         entry("two", "Two.mp3"),
     )
 
-    private fun entry(id: String, name: String, mime: String = "audio/mpeg") = SourceEntry(
-        source.id,
-        id,
-        "content://music/$id",
-        name,
-        mime,
-        1,
-        1,
+    private fun entry(
+        id: String,
+        name: String,
+        mime: String = "audio/mpeg",
+        parentDocumentId: String? = null,
+    ) = SourceEntry(
+        sourceId = source.id,
+        stableId = id,
+        contentUri = "content://music/$id",
+        displayName = name,
+        mimeType = mime,
+        sizeBytes = 1,
+        modifiedAtEpochMs = 1,
+        parentDocumentId = parentDocumentId,
     )
 
     private fun track(id: String) = TrackEntity(

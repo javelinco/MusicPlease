@@ -61,6 +61,30 @@ class DatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migrationThreeToFourAddsNullableParentDocumentId() {
+        helper.createDatabase("migration-3-4", 3).close()
+
+        helper.runMigrationsAndValidate(
+            "migration-3-4",
+            4,
+            true,
+            DatabaseMigrations.MIGRATION_3_4,
+        ).use { migrated ->
+            migrated.query("PRAGMA table_info(`tracks`)").use { cursor ->
+                val nameColumn = cursor.getColumnIndexOrThrow("name")
+                val notNullColumn = cursor.getColumnIndexOrThrow("notnull")
+                var foundNullableParent = false
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(nameColumn) == "parentDocumentId") {
+                        foundNullableParent = cursor.getInt(notNullColumn) == 0
+                    }
+                }
+                assertEquals(true, foundNullableParent)
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.rowCount(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

@@ -192,4 +192,5 @@ private fun NormalizedTrackMetadata.toTrack(entry: SourceEntry) = TrackEntity(
     modifiedAtEpochMs = entry.modifiedAtEpochMs ?: 0,
     sizeBytes = entry.sizeBytes ?: 0,
     available = true,
+    parentDocumentId = entry.parentDocumentId,
 )

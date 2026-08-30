@@ -53,6 +53,7 @@ class SafTreeReader(
                             mimeType = mimeType,
                             sizeBytes = cursor.nullableLong(sizeColumn),
                             modifiedAtEpochMs = cursor.nullableLong(modifiedColumn),
+                            parentDocumentId = parentId,
                         ),
                     )
                 }

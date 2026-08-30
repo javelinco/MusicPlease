@@ -11,6 +11,7 @@ data class SourceEntry(
     val mimeType: String?,
     val sizeBytes: Long?,
     val modifiedAtEpochMs: Long?,
+    val parentDocumentId: String? = null,
 )
 
 interface SourceReader {

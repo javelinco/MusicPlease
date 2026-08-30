@@ -34,6 +34,7 @@ class AppContainer(context: Context) {
     ).addMigrations(
         DatabaseMigrations.MIGRATION_1_2,
         DatabaseMigrations.MIGRATION_2_3,
+        DatabaseMigrations.MIGRATION_3_4,
     ).build()
     val sourceRegistry = RoomSourceRegistry(database.libraryDao())
     val libraryRepository = LibraryRepository(database.libraryDao())

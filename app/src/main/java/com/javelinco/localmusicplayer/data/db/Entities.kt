@@ -50,6 +50,7 @@ data class TrackEntity(
     val modifiedAtEpochMs: Long,
     val sizeBytes: Long,
     val available: Boolean,
+    val parentDocumentId: String? = null,
 )
 
 @Entity(tableName = "ignored_tracks", indices = [Index("sourceId")])

@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
         SettingsMetadataEntity::class,
         RecentPlayEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class LocalMusicDatabase : RoomDatabase() {
