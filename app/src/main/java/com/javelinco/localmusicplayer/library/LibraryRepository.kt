@@ -28,7 +28,9 @@ class LibraryRepository(
 private fun String.toFtsPrefixExpression(column: String?): String? {
     val terms = trim().split(Regex("\\s+")).filter(String::isNotBlank)
     if (terms.isEmpty()) return null
-    return terms.joinToString(" AND ") { term ->
+    // Whitespace is implicit AND in both FTS4 query syntaxes. A literal AND is
+    // treated as a searchable term when SQLite uses the standard parser.
+    return terms.joinToString(" ") { term ->
         val escaped = term.replace("\"", "\"\"")
         val prefix = "\"$escaped\"*"
         if (column == null) prefix else "$column:$prefix"

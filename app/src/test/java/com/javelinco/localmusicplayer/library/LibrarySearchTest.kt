@@ -103,6 +103,40 @@ class LibrarySearchTest {
         }
     }
 
+    @Test
+    fun trackSearchAcceptsSpacesAndMatchesMultipleTitleWords() = runTest {
+        database.libraryDao().applyScanBatch(
+            ScanBatch(
+                tracks = listOf(
+                    track().copy(
+                        trackId = "nothing-compares",
+                        contentUri = "content://music/nothing-compares",
+                        fileName = "Nothing Compares 2 U.mp3",
+                        title = "Nothing Compares 2 U",
+                        artist = "Sinéad O'Connor",
+                        normalizedTitle = "nothing compares 2 u",
+                        normalizedArtist = "sinéad o'connor",
+                    ),
+                    track().copy(
+                        trackId = "nothing-else",
+                        contentUri = "content://music/nothing-else",
+                        fileName = "Nothing Else Matters.mp3",
+                        title = "Nothing Else Matters",
+                        normalizedTitle = "nothing else matters",
+                    ),
+                ),
+                checkpoint = ScanCheckpointEntity("source", "multi-word", 2, 1),
+            ),
+        )
+
+        val result = search.search(LibraryView.TRACKS, "nothing compares", emptyList())
+
+        assertEquals(
+            listOf("nothing-compares"),
+            (result as LibrarySearchResult.Tracks).items.map(TrackEntity::trackId),
+        )
+    }
+
     private fun track() = TrackEntity(
         trackId = "song",
         sourceId = "source",
