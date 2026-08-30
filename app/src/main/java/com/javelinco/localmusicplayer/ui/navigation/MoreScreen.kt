@@ -90,9 +90,10 @@ private fun MoreOptionCard(option: MoreOption) {
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        BoxWithConstraints(Modifier.fillMaxWidth().padding(16.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
             if (maxWidth >= 360.dp) {
                 Row(
+                    modifier = Modifier.padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -103,7 +104,10 @@ private fun MoreOptionCard(option: MoreOption) {
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
