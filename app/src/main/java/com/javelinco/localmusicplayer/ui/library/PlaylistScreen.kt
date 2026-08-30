@@ -10,17 +10,20 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.javelinco.localmusicplayer.data.db.PlaylistEntryEntity
 import com.javelinco.localmusicplayer.data.db.TrackEntity
@@ -43,6 +46,7 @@ fun PlaylistScreen(
 ) {
     var name by remember { mutableStateOf("") }
     var selectedId by remember { mutableStateOf<String?>(null) }
+    var pendingDelete by remember { mutableStateOf<PlaylistSummary?>(null) }
     val selected = playlists.find { it.id.value == selectedId }
     BackHandler(enabled = selected != null) {
         selectedId = null
@@ -68,7 +72,7 @@ fun PlaylistScreen(
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Playlist name") })
             Row {
                 Button(onClick = { onRename(selected.id.value, name) }) { Text("Rename") }
-                Button(onClick = { onDelete(selected.id.value); selectedId = null }) { Text("Delete") }
+                Button(onClick = { pendingDelete = selected }) { Text("Delete") }
             }
             Text("Playlist order")
             val selectedEntries = entries.filter { it.playlistId == selected.id.value }.sortedBy { it.position }
@@ -104,5 +108,32 @@ fun PlaylistScreen(
                 }
             }
         }
+    }
+    pendingDelete?.let { playlist ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete playlist?") },
+            text = {
+                Text("Delete \"${playlist.name}\"? This removes the playlist. Your music files will not be deleted.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val playlistId = playlist.id.value
+                        pendingDelete = null
+                        selectedId = null
+                        onDelete(playlistId)
+                    },
+                    modifier = Modifier.testTag("confirm-playlist-delete"),
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 }
