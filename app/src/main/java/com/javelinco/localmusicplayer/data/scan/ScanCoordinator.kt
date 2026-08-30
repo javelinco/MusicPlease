@@ -2,6 +2,8 @@ package com.javelinco.localmusicplayer.data.scan
 
 import com.javelinco.localmusicplayer.data.db.ScanErrorEntity
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.DerivedMediaIndexer
+import com.javelinco.localmusicplayer.data.media.NoOpDerivedMediaIndexer
 import com.javelinco.localmusicplayer.data.source.MusicSource
 import com.javelinco.localmusicplayer.data.source.SourceEntry
 import com.javelinco.localmusicplayer.data.source.SourceReader
@@ -20,6 +22,7 @@ class DefaultScanCoordinator(
     private val extractor: Mp3MetadataExtractor,
     private val catalog: ScanCatalog,
     private val runtimeGate: ScanRuntimeGate = AlwaysAvailableScanRuntimeGate,
+    private val derivedMediaIndexer: DerivedMediaIndexer = NoOpDerivedMediaIndexer,
     private val batchSize: Int = 100,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ScanCoordinator {
@@ -83,6 +86,7 @@ class DefaultScanCoordinator(
         if (cancellationRequested) return
 
         val tracks = mutableListOf<TrackEntity>()
+        val derivedTracks = mutableMapOf<String, Pair<SourceEntry, TrackEntity>>()
         val errors = mutableListOf<ScanErrorEntity>()
         val seenTrackIds = entries.asSequence()
             .filter(SourceEntry::isMp3)
@@ -103,11 +107,13 @@ class DefaultScanCoordinator(
                 updateProgress { it.copy(skipped = it.skipped + 1) }
             } else if (existingTracks[entry.trackId]?.matches(entry) == true) {
                 // The inventory still sees the file and its fingerprint is unchanged.
+                derivedTracks[entry.trackId] = entry to existingTracks.getValue(entry.trackId)
             } else {
                 runCatching { extractor.extract(entry) }
                     .onSuccess { raw ->
                         val track = MetadataNormalizer.normalize(raw, entry).toTrack(entry)
                         tracks += track
+                        derivedTracks[track.trackId] = entry to track
                         seenTrackIds += track.trackId
                         updateProgress { it.copy(processed = it.processed + 1) }
                     }
@@ -131,7 +137,19 @@ class DefaultScanCoordinator(
             updateProgress { it.copy(phase = ScanPhase.RECONCILING) }
             val removed = catalog.reconcile(source.id, seenTrackIds)
             updateProgress { it.copy(removed = it.removed + removed) }
-            catalog.clearCheckpoint(source.id)
+            derivedMediaIndexer.beginPass(source)
+            updateProgress { it.copy(phase = ScanPhase.ARTWORK) }
+            for ((entry, track) in derivedTracks.values) {
+                if (cancellationRequested) break
+                cooperateWithRuntime(mode)
+                runCatching { derivedMediaIndexer.index(source, entry, track) }
+                currentCheckpoint = entry.stableId
+            }
+            if (cancellationRequested) {
+                catalog.applyBatch(CatalogScanBatch(source.id, emptyList(), emptyList(), currentCheckpoint))
+            } else {
+                catalog.clearCheckpoint(source.id)
+            }
         }
     }
 

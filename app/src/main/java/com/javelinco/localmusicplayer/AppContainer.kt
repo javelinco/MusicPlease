@@ -8,6 +8,11 @@ import com.javelinco.localmusicplayer.data.backup.RoomBackupDataSource
 import com.javelinco.localmusicplayer.data.backup.SafBackupStorage
 import com.javelinco.localmusicplayer.data.db.LocalMusicDatabase
 import com.javelinco.localmusicplayer.data.db.DatabaseMigrations
+import com.javelinco.localmusicplayer.data.media.AndroidCompanionFileReader
+import com.javelinco.localmusicplayer.data.media.AndroidEmbeddedMediaReader
+import com.javelinco.localmusicplayer.data.media.DerivedMediaCache
+import com.javelinco.localmusicplayer.data.media.DerivedMediaRepository
+import com.javelinco.localmusicplayer.data.media.LocalMediaResolver
 import com.javelinco.localmusicplayer.data.scan.AndroidMp3MetadataExtractor
 import com.javelinco.localmusicplayer.data.scan.DefaultScanCoordinator
 import com.javelinco.localmusicplayer.data.scan.RoomScanCatalog
@@ -46,6 +51,17 @@ class AppContainer(context: Context) {
     val queueEngine = QueueEngine()
     val settings = AppSettings(appContext)
     val backupData = RoomBackupDataSource(database.libraryDao(), database.userDataDao())
+    private val metadataExtractor = AndroidMp3MetadataExtractor(appContext.contentResolver)
+    val derivedMediaRepository = DerivedMediaRepository(
+        cache = DerivedMediaCache(appContext.cacheDir),
+        resolver = LocalMediaResolver(
+            companionReader = AndroidCompanionFileReader(appContext.contentResolver),
+            embeddedReader = AndroidEmbeddedMediaReader(appContext.contentResolver, metadataExtractor),
+        ),
+        sourceProvider = { sourceId ->
+            sourceRegistry.observeSources().first().firstOrNull { it.id.value == sourceId }
+        },
+    )
     val scanCoordinator = DefaultScanCoordinator(
         sourceProvider = { sourceRegistry.observeSources().first() },
         readerFactory = { source ->
@@ -55,8 +71,9 @@ class AppContainer(context: Context) {
                 is MediaStoreSource -> MediaStoreReader(appContext.contentResolver)
             }
         },
-        extractor = AndroidMp3MetadataExtractor(appContext.contentResolver),
+        extractor = metadataExtractor,
         catalog = RoomScanCatalog(database.libraryDao()),
+        derivedMediaIndexer = derivedMediaRepository,
     )
 
     fun backupManager(treeUri: String): BackupManager {

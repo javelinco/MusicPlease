@@ -40,11 +40,15 @@ data class ResolvedTrackMedia(
     val companionFingerprint: String,
 )
 
+interface TrackMediaResolver {
+    suspend fun resolve(source: MusicSource, entry: SourceEntry, track: TrackEntity): ResolvedTrackMedia
+}
+
 class LocalMediaResolver(
     private val companionReader: CompanionFileReader,
     private val embeddedReader: EmbeddedMediaReader,
-) {
-    suspend fun resolve(source: MusicSource, entry: SourceEntry, track: TrackEntity): ResolvedTrackMedia {
+) : TrackMediaResolver {
+    override suspend fun resolve(source: MusicSource, entry: SourceEntry, track: TrackEntity): ResolvedTrackMedia {
         val embedded = embeddedReader.read(entry)
         if (source !is SafTreeSource || entry.parentDocumentId == null) {
             return ResolvedTrackMedia(embedded.artwork, embedded.lyrics.synchronized ?: embedded.lyrics.plain, "")

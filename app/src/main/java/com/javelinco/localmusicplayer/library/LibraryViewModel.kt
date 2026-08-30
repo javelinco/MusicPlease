@@ -56,6 +56,7 @@ class LibraryViewModel(private val container: AppContainer) : ViewModel() {
     val settings: StateFlow<SettingsState> = container.settings.state
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsState())
     val scanProgress: StateFlow<ScanProgress?> = container.scanCoordinator.progress
+    val trackMedia = container.derivedMediaRepository.states
     val homeHistory: StateFlow<HomeHistoryState> = combine(
         container.recentPlayRepository.observeRecentTracks(),
         container.recentPlayRepository.observeRecentPlaylists(),
@@ -131,6 +132,10 @@ class LibraryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun startBackgroundScan() {
         scanSession.startBackground()
+    }
+
+    fun requestMedia(track: TrackEntity) {
+        viewModelScope.launch { container.derivedMediaRepository.ensure(track) }
     }
 
     fun enterDedicatedScan(stopPlayback: () -> Unit) {

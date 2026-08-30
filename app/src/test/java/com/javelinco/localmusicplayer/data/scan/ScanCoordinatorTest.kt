@@ -3,6 +3,7 @@ package com.javelinco.localmusicplayer.data.scan
 import com.javelinco.localmusicplayer.core.model.SourceId
 import com.javelinco.localmusicplayer.data.db.ScanErrorEntity
 import com.javelinco.localmusicplayer.data.db.TrackEntity
+import com.javelinco.localmusicplayer.data.media.DerivedMediaIndexer
 import com.javelinco.localmusicplayer.data.source.MusicSource
 import com.javelinco.localmusicplayer.data.source.SafTreeSource
 import com.javelinco.localmusicplayer.data.source.SourceEntry
@@ -149,6 +150,38 @@ class ScanCoordinatorTest {
         assertEquals("music/album", catalog.tracks.single().parentDocumentId)
     }
 
+    @Test
+    fun derivedPassRunsAfterCatalogReconciliationAndYieldsInBackground() = runTest {
+        val events = mutableListOf<String>()
+        val catalog = RecordingCatalog().apply { onReconcile = { events += "catalog" } }
+        val indexer = object : DerivedMediaIndexer {
+            var indexed = 0
+            override suspend fun beginPass(source: MusicSource) { events += "begin" }
+            override suspend fun index(source: MusicSource, entry: SourceEntry, track: TrackEntity) {
+                indexed++
+                events += "derived"
+            }
+        }
+        val gate = object : ScanRuntimeGate {
+            var windows = 0
+            override suspend fun awaitBackgroundWindow() { windows++ }
+        }
+        val coordinator = DefaultScanCoordinator(
+            sourceProvider = { listOf(source) },
+            readerFactory = { ListReader(listOf(entry("one", "One.mp3"))) },
+            extractor = FakeExtractor(),
+            catalog = catalog,
+            runtimeGate = gate,
+            derivedMediaIndexer = indexer,
+        )
+
+        coordinator.run(ScanExecutionMode.BACKGROUND)
+
+        assertTrue(events.indexOf("catalog") < events.indexOf("derived"))
+        assertEquals(1, indexer.indexed)
+        assertEquals(3, gate.windows) // enumeration, metadata, derived media
+    }
+
     private fun entries() = listOf(
         entry("one", "One.mp3"),
         entry("skip", "Notes.txt", "text/plain"),
@@ -225,6 +258,7 @@ class ScanCoordinatorTest {
         var reconciled = false
         var reconciledTrackIds = emptySet<String>()
         var afterBatch: (suspend () -> Unit)? = null
+        var onReconcile: (() -> Unit)? = null
 
         override suspend fun checkpoint(sourceId: SourceId): String? = checkpoints[sourceId.value]
 
@@ -242,6 +276,7 @@ class ScanCoordinatorTest {
         }
 
         override suspend fun reconcile(sourceId: SourceId, seenTrackIds: Set<String>): Int {
+            onReconcile?.invoke()
             reconciled = true
             reconciledTrackIds = seenTrackIds
             return existing.count { it.available && it.trackId !in seenTrackIds }
