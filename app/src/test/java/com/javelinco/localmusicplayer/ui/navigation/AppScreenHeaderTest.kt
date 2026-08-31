@@ -19,12 +19,12 @@ class AppScreenHeaderTest {
 
         assertEquals(
             expected,
-            Destination.entries.associateWith { screenHeaderTitle(it, homeIsPlaying = false) },
+            Destination.entries.associateWith { screenHeaderTitle(it, homeHasSession = false) },
         )
     }
 
     @Test
-    fun homeUsesNowPlayingTitleWhilePlaybackIsActive() {
-        assertEquals("Now playing", screenHeaderTitle(Destination.HOME, homeIsPlaying = true))
+    fun homeUsesNowPlayingTitleWhilePlaybackSessionIsActive() {
+        assertEquals("Now playing", screenHeaderTitle(Destination.HOME, homeHasSession = true))
     }
 }

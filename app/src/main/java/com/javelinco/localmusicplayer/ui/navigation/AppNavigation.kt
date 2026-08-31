@@ -57,10 +57,10 @@ internal fun chooseInitialPrimaryDestination(
     recentLoaded: Boolean,
     playbackReady: Boolean,
     hasRecent: Boolean,
-    isPlaying: Boolean,
+    hasSession: Boolean,
 ): PrimaryDestination? = when {
     !recentLoaded || !playbackReady -> null
-    hasRecent || isPlaying -> PrimaryDestination.HOME
+    hasRecent || hasSession -> PrimaryDestination.HOME
     else -> PrimaryDestination.LIBRARY
 }
 
@@ -138,7 +138,7 @@ fun AppNavigation(
                 recentLoaded = recentLoaded,
                 playbackReady = playback.controllerReady,
                 hasRecent = recentTracks.isNotEmpty() || recentPlaylists.isNotEmpty(),
-                isPlaying = playback.isPlaying,
+                hasSession = playback.hasSession,
             )) {
                 PrimaryDestination.HOME -> Destination.HOME
                 PrimaryDestination.LIBRARY -> Destination.LIBRARY
@@ -201,12 +201,12 @@ fun AppNavigation(
     ) { padding ->
         Column(Modifier.padding(padding)) {
             AppScreenHeader(
-                title = screenHeaderTitle(current, homeIsPlaying = playback.isPlaying),
+                title = screenHeaderTitle(current, homeHasSession = playback.hasSession),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             )
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 when (current) {
-                Destination.HOME -> if (playback.isPlaying) {
+                Destination.HOME -> if (playback.hasSession) {
                     NowPlayingScreen(
                         playback,
                         settings.reducedMotion,

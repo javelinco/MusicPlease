@@ -12,7 +12,7 @@ class NavigationPolicyTest {
                 recentLoaded = true,
                 playbackReady = false,
                 hasRecent = false,
-                isPlaying = false,
+                hasSession = false,
             ),
         )
         assertNull(
@@ -20,7 +20,7 @@ class NavigationPolicyTest {
                 recentLoaded = false,
                 playbackReady = true,
                 hasRecent = false,
-                isPlaying = false,
+                hasSession = false,
             ),
         )
         assertEquals(
@@ -29,7 +29,7 @@ class NavigationPolicyTest {
                 recentLoaded = true,
                 playbackReady = true,
                 hasRecent = false,
-                isPlaying = false,
+                hasSession = false,
             ),
         )
         assertEquals(
@@ -38,7 +38,7 @@ class NavigationPolicyTest {
                 recentLoaded = true,
                 playbackReady = true,
                 hasRecent = true,
-                isPlaying = false,
+                hasSession = false,
             ),
         )
         assertEquals(
@@ -47,7 +47,7 @@ class NavigationPolicyTest {
                 recentLoaded = true,
                 playbackReady = true,
                 hasRecent = false,
-                isPlaying = true,
+                hasSession = true,
             ),
         )
     }

@@ -11,9 +11,9 @@ internal enum class Destination {
     SETTINGS,
 }
 
-internal fun screenHeaderTitle(destination: Destination, homeIsPlaying: Boolean): String =
+internal fun screenHeaderTitle(destination: Destination, homeHasSession: Boolean): String =
     when (destination) {
-        Destination.HOME -> if (homeIsPlaying) "Now playing" else "Recently played"
+        Destination.HOME -> if (homeHasSession) "Now playing" else "Recently played"
         Destination.LIBRARY -> "Library"
         Destination.MORE -> "More"
         Destination.NOW_PLAYING -> "Now playing"
