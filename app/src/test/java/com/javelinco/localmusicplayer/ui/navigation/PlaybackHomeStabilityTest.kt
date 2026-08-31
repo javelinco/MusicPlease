@@ -27,6 +27,7 @@ class PlaybackHomeStabilityTest {
     @Test
     fun pausingAnActiveSessionKeepsNowPlayingMounted() {
         lateinit var setPlaying: (Boolean) -> Unit
+        compose.mainClock.autoAdvance = false
         compose.setContent {
             var isPlaying by remember { mutableStateOf(true) }
             setPlaying = { isPlaying = it }
@@ -66,9 +67,11 @@ class PlaybackHomeStabilityTest {
                 onReducedMotion = {},
             )
         }
+        compose.mainClock.advanceTimeByFrame()
 
         compose.onNodeWithText("Now playing").assertIsDisplayed()
         compose.runOnIdle { setPlaying(false) }
+        compose.mainClock.advanceTimeByFrame()
 
         compose.onNodeWithText("Now playing").assertIsDisplayed()
         compose.onNodeWithText("0:42").assertIsDisplayed()

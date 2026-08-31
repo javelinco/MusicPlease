@@ -24,7 +24,6 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -96,16 +95,14 @@ fun NowPlayingScreen(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Slider(
-            value = state.positionMs.toFloat().coerceAtMost(state.durationMs.toFloat().coerceAtLeast(1f)),
-            onValueChange = { onSeek(it.toLong()) },
-            valueRange = 0f..state.durationMs.toFloat().coerceAtLeast(1f),
+        PlaybackProgress(
+            mediaId = state.currentMediaId,
+            positionMs = state.positionMs,
+            durationMs = state.durationMs,
+            isPlaying = state.isPlaying,
+            onSeek = onSeek,
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(state.positionMs.asTime(), style = MaterialTheme.typography.labelSmall)
-            Text(state.durationMs.asTime(), style = MaterialTheme.typography.labelSmall)
-        }
         Row(
             Modifier.fillMaxWidth().testTag("transport-controls").padding(vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -179,9 +176,4 @@ private fun ModeAction(
         }
         Text(label, style = MaterialTheme.typography.labelSmall)
     }
-}
-
-private fun Long.asTime(): String {
-    val totalSeconds = coerceAtLeast(0) / 1_000
-    return "${totalSeconds / 60}:${(totalSeconds % 60).toString().padStart(2, '0')}"
 }
