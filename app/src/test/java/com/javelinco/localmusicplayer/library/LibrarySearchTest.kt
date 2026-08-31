@@ -137,6 +137,33 @@ class LibrarySearchTest {
         )
     }
 
+    @Test
+    fun trackSearchMatchesEachIncrementalWordPrefix() = runTest {
+        database.libraryDao().applyScanBatch(
+            ScanBatch(
+                tracks = listOf(
+                    track().copy(
+                        trackId = "rhythm",
+                        contentUri = "content://music/rhythm",
+                        fileName = "Rhythm Nation.mp3",
+                        title = "Rhythm Nation",
+                        normalizedTitle = "rhythm nation",
+                    ),
+                ),
+                checkpoint = ScanCheckpointEntity("source", "prefix", 1, 1),
+            ),
+        )
+
+        listOf("r", "rh", "rhy").forEach { query ->
+            assertEquals(
+                "Query $query",
+                listOf("rhythm"),
+                (search.search(LibraryView.TRACKS, query, emptyList()) as LibrarySearchResult.Tracks)
+                    .items.map(TrackEntity::trackId),
+            )
+        }
+    }
+
     private fun track() = TrackEntity(
         trackId = "song",
         sourceId = "source",

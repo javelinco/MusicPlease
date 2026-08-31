@@ -32,7 +32,7 @@ private fun String.toFtsPrefixExpression(column: String?): String? {
     // treated as a searchable term when SQLite uses the standard parser.
     return terms.joinToString(" ") { term ->
         val escaped = term.replace("\"", "\"\"")
-        val prefix = "\"$escaped\"*"
+        val prefix = "\"$escaped*\""
         if (column == null) prefix else "$column:$prefix"
     }
 }
