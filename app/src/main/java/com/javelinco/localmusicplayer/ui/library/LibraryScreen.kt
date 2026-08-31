@@ -36,6 +36,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
@@ -108,6 +111,15 @@ fun LibraryScreen(state: LibraryScreenState, actions: LibraryActions) {
     var pendingAddition by remember { mutableStateOf<PendingPlaylistAddition?>(null) }
     var pendingInformation by remember { mutableStateOf<TrackEntity?>(null) }
     var localRequestedArtist by remember { mutableStateOf<String?>(null) }
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(state.searchOpen) {
+        if (state.searchOpen) {
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     BackHandler(enabled = openedGroup != null || state.searchOpen) {
         if (openedGroup != null) {
@@ -192,7 +204,11 @@ fun LibraryScreen(state: LibraryScreenState, actions: LibraryActions) {
                 onValueChange = actions.onSearch,
                 label = { Text("Search ${state.selectedView.label.lowercase()}") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .focusRequester(searchFocusRequester)
+                    .testTag("library-search-field"),
             )
         }
         ScanFeedback(
