@@ -341,7 +341,7 @@ class LibraryUiTest {
         compose.onNodeWithText("Add all to playlist").assertIsDisplayed()
     }
 
-    @Test fun playlistRowsClearlyOpenTheirTracks() {
+    @Test fun playlistCardsClearlyExpandTheirTracks() {
         val playlist = playlist(trackCount = 1)
         val track = track("one", "First track")
         compose.setContent {
@@ -361,10 +361,10 @@ class LibraryUiTest {
             )
         }
 
-        compose.onNodeWithContentDescription("Open Road Mix").assertIsDisplayed()
-        compose.onNodeWithText("Road Mix").performClick()
-        compose.onNodeWithText("Playlist order").assertIsDisplayed()
-        compose.onAllNodesWithText("First track").assertCountEquals(2)
+        compose.onNodeWithContentDescription("Show tracks in Road Mix").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Hide tracks in Road Mix").assertIsDisplayed()
+        compose.onNodeWithText("First track").assertIsDisplayed()
+        compose.onAllNodesWithText("Playlist order").assertCountEquals(0)
     }
 
     private fun source() = SafTreeSource(SourceId("source"), "content://music", "Music")

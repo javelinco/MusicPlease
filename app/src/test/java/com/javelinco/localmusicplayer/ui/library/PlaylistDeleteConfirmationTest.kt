@@ -1,7 +1,8 @@
 package com.javelinco.localmusicplayer.ui.library
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -38,8 +39,7 @@ class PlaylistDeleteConfirmationTest {
             )
         }
 
-        compose.onNodeWithText("Road Mix").performClick()
-        compose.onNodeWithText("Delete").performClick()
+        compose.onNodeWithContentDescription("Delete Road Mix").performClick()
 
         compose.runOnIdle { assertEquals(emptyList<String>(), deletedPlaylistIds) }
         compose.onNodeWithText("Delete playlist?").assertIsDisplayed()
@@ -48,9 +48,9 @@ class PlaylistDeleteConfirmationTest {
         compose.onNodeWithText("Cancel").performClick()
         compose.runOnIdle { assertEquals(emptyList<String>(), deletedPlaylistIds) }
 
-        compose.onNodeWithText("Delete").performClick()
+        compose.onNodeWithContentDescription("Delete Road Mix").performClick()
         compose.onNodeWithTag("confirm-playlist-delete").performClick()
         compose.runOnIdle { assertEquals(listOf("mix"), deletedPlaylistIds) }
-        compose.onNodeWithText("Playlist name").assertIsDisplayed()
+        compose.onNodeWithText("New playlist").assertIsDisplayed()
     }
 }

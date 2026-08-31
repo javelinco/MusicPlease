@@ -93,7 +93,7 @@ class SystemBackUiTest {
     }
 
     @Test
-    fun systemBackClosesPlaylistDetail() {
+    fun systemBackCollapsesExpandedPlaylistCard() {
         compose.setContent {
             PlaylistScreen(
                 playlists = listOf(PlaylistSummary(PlaylistId("mix"), "My Mix", 0)),
@@ -109,12 +109,13 @@ class SystemBackUiTest {
             )
         }
 
-        compose.onNodeWithText("My Mix").performClick()
-        compose.onNodeWithText("Back to playlists").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Show tracks in My Mix").performClick()
+        compose.onNodeWithContentDescription("Hide tracks in My Mix").assertIsDisplayed()
 
         pressBack()
-        compose.onAllNodesWithText("Back to playlists").assertCountEquals(0)
-        compose.onNodeWithText("Create playlist").assertIsDisplayed()
+        compose.onAllNodesWithContentDescription("Hide tracks in My Mix").assertCountEquals(0)
+        compose.onNodeWithContentDescription("Show tracks in My Mix").assertIsDisplayed()
+        compose.onNodeWithText("New playlist").assertIsDisplayed()
     }
 }
 
